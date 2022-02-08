@@ -32,6 +32,7 @@ import (
 	"github.com/googlecodelabs/tools/claat/parser"
 	"github.com/googlecodelabs/tools/claat/types"
 	"github.com/googlecodelabs/tools/claat/util"
+        "github.com/stoewer/go-strcase"
 )
 
 func init() {
@@ -77,6 +78,9 @@ const (
 
 	// google docs comments are links with commentPrefix.
 	commentPrefix = "#cmnt"
+
+	// the google.com redirector service
+	redirectorPrefix = "https://www.google.com/url?q="
 )
 
 var (
@@ -387,14 +391,12 @@ func metaTable(ds *docState) {
 			continue
 		}
 		s := stringifyNode(tr.FirstChild.NextSibling, true, false)
-		fieldName := strings.ToLower(stringifyNode(tr.FirstChild, true, false))
+		fieldName := strcase.SnakeCase(stringifyNode(tr.FirstChild, true, false))
 		switch fieldName {
 		case "id", "url":
 			ds.clab.ID = s
 		case "author", "authors":
 			ds.clab.Authors = s
-		case "badge path":
-			ds.clab.BadgePath = s
 		case "summary":
 			ds.clab.Summary = stringifyNode(tr.FirstChild.NextSibling, true, true)
 		case "category", "categories":
@@ -406,9 +408,9 @@ func metaTable(ds *docState) {
 			v := util.NormalizedSplit(s)
 			sv := types.LegacyStatus(v)
 			ds.clab.Status = &sv
-		case "feedback", "feedback link":
+		case "feedback", "feedback_link":
 			ds.clab.Feedback = s
-		case "analytics", "analytics account", "google analytics":
+		case "analytics", "analytics_account", "google_analytics":
 			ds.clab.GA = s
 		default:
 			// If not explicitly parsed, it might be a pass_metadata value.
@@ -784,6 +786,15 @@ func link(ds *docState) nodes.Node {
 	text := stringifyNode(ds.cur, false, true)
 	if strings.TrimSpace(text) == "" {
 		return nil
+	}
+
+	// re-write google.com redirector URLs
+	if strings.HasPrefix(href, redirectorPrefix) {
+		href = strings.TrimPrefix(href, redirectorPrefix)
+		h, err := url.QueryUnescape(href)
+		if err == nil {
+			href = h
+		}
 	}
 
 	t := nodes.NewTextNode(nodes.NewTextNodeOptions{

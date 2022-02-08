@@ -214,7 +214,7 @@ func TestMetaTablePassMetadata(t *testing.T) {
 				<td>Final</td>
 			</tr>
 			<tr>
-				<td>Feedback</td>
+				<td>Feedback Link</td>
 				<td>https://example.com/issues</td>
 			</tr>
 			<tr>
@@ -237,7 +237,7 @@ func TestMetaTablePassMetadata(t *testing.T) {
 	p := &Parser{}
 	opts := *parser.NewOptions()
 	opts.PassMetadata = map[string]bool{
-		"extrafieldone": true,
+		"extra_field_one": true,
 	}
 
 	clab, err := p.Parse(markupReader(markup), opts)
@@ -256,7 +256,7 @@ func TestMetaTablePassMetadata(t *testing.T) {
 		// TODO: move sorting to Parse of the parser package
 		Tags: []string{"kiosk", "web"},
 		Extra: map[string]string{
-			"extrafieldone": "11111",
+			"extra_field_one": "11111",
 		},
 	}
 	if !reflect.DeepEqual(clab.Meta, meta) {
@@ -536,7 +536,8 @@ func TestParseFragment(t *testing.T) {
 	<body>
 		<p class="title"><a name="a1"></a><span>Test Codelab</span></p>
 		<p>this should not be ignored</p>
-		<img src="https://host/image.png">
+		<p><img src="https://host/image.png"></p>
+		<span class="c17 c7"><a class="c11" href="https://www.google.com/url?q=https://www.example.com/%2B/test;l%3D68&amp;sa=D">Test redirector.</a></span>
 		<div class="comment">
 		<p><a href="#cmnt_ref1" name="cmnt1">[a]</a><span class="c16 c8">Test comment.</span></p>
 		</div>
@@ -565,6 +566,14 @@ func TestParseFragment(t *testing.T) {
 
 	img := nodes.NewImageNode(nodes.NewImageNodeOptions{Src: "https://host/image.png"})
 	para = nodes.NewListNode(img)
+	para.MutateBlock(true)
+	want = append(want, para)
+
+	tn := nodes.NewTextNode(nodes.NewTextNodeOptions{
+		Value: "Test redirector.",
+	})
+	rlink := nodes.NewURLNode("https://www.example.com/+/test;l=68&sa=D", tn)
+	para = nodes.NewListNode(rlink)
 	para.MutateBlock(true)
 	want = append(want, para)
 

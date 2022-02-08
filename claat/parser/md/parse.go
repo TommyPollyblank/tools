@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package md implements a parser for CLaaT. It expects, as input, the output of running a Markdown file through
-// the Devsite Markdown processor.
+// the Markdown processor.
 package md
 
 import (
@@ -32,6 +32,7 @@ import (
 
 	"golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
+	"github.com/stoewer/go-strcase"
 
 	"github.com/googlecodelabs/tools/claat/nodes"
 	"github.com/googlecodelabs/tools/claat/parser"
@@ -45,14 +46,13 @@ import (
 // Metadata constants for the YAML header
 const (
 	MetaAuthors          = "authors"
-	MetaBadgePath        = "badge path"
 	MetaSummary          = "summary"
 	MetaID               = "id"
 	MetaCategories       = "categories"
 	MetaEnvironments     = "environments"
 	MetaStatus           = "status"
-	MetaFeedbackLink     = "feedback link"
-	MetaAnalyticsAccount = "analytics account"
+	MetaFeedbackLink     = "feedback_link"
+	MetaAnalyticsAccount = "analytics_account"
 	MetaTags             = "tags"
 	MetaSource           = "source"
 	MetaDuration         = "duration"
@@ -240,7 +240,7 @@ func renderToHTML(b []byte) ([]byte, error) {
 	return out.Bytes(), nil
 }
 
-// parseMarkup accepts html nodes to markup created by the Devsite Markdown parser. It returns a pointer to a codelab object, or an error if one occurs.
+// parseMarkup accepts html nodes to markup created by the Markdown parser. It returns a pointer to a codelab object, or an error if one occurs.
 func parseMarkup(markup *html.Node, opts parser.Options) (*types.Codelab, error) {
 	body := findAtom(markup, atom.Body)
 	if body == nil {
@@ -412,13 +412,10 @@ func parseMetadata(ds *docState, opts parser.Options) error {
 // and assigns the values to any keys that match a codelab metadata field as defined by the meta* constants.
 func addMetadataToCodelab(m map[string]string, c *types.Codelab, opts parser.Options) error {
 	for k, v := range m {
-		switch k {
+		switch strcase.SnakeCase(k) {
 		case MetaAuthors:
 			// Directly assign the summary to the codelab field.
 			c.Authors = v
-		case MetaBadgePath:
-			// Directly assign the badge Path to the codelab field.
-			c.BadgePath = v
 		case MetaSummary:
 			// Directly assign the summary to the codelab field.
 			c.Summary = v
